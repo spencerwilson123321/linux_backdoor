@@ -36,4 +36,4 @@ def receive(pkt):
     print(pkt.show())
 
 if __name__ == "__main__":
-    sniff(filter="udp && udp.sport == 10069", iface="enp2s0", prn=receive)
+    sniff(filter="ip host 10.0.0.159 and udp sport 10069", iface="enp1s0", prn=receive)
