@@ -18,7 +18,7 @@ class NetworkManager():
     """
         This class will handle crafting DNS queries as well as inserting encrypted data.
     """
-    class __init__(self):
+    def __init__(self):
         pass
 
     def create_dns_query(self):
