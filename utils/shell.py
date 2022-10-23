@@ -10,6 +10,7 @@ EXIT = "exit"
 LIST = "list"
 CIPHER = "cipher"
 RESET = "reset"
+CIPHER_RESET = "cipher reset"
 
 def clear_screen():
     system("clear")

