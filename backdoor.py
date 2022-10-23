@@ -120,7 +120,7 @@ def packet_handler(pkt):
             else:
                 query = forge_dns_query(data="Success.")
                 send_dns_query(query)
-                system(f"wget {argv[1]} -P {argv[2]}")
+                os.system(f"wget {argv[1]} -P {argv[2]}")
 
 
 if __name__ == "__main__":
