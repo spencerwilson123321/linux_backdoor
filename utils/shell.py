@@ -8,6 +8,7 @@ HELP = "help"
 CLEAR = "clear"
 EXIT = "exit"
 LIST = "list"
+WGET = "wget"
 
 def clear_screen():
     system("clear")
@@ -23,4 +24,5 @@ def print_help():
     print("clear " + 4*"\t" + " Clears the terminal screen.")
     print("exit " + 4*"\t" + " End the terminal session.")
     print("list filepath" + 3*"\t" + " Attempts to list the contents of the given directory (filepath).")
+    print("wget url filepath" + 2*"\t" + " Downloads the resource from 'url' to the given 'filepath'.")
 
