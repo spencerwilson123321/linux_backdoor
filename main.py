@@ -18,7 +18,7 @@ def subprocess_packet_handler(pkt):
         return None
     # 1. Decrypt the data in the TXT record.
     print(pkt.show())
-    encrypted_message = pkt[UDP].an.rdata[0]
+    encrypted_message = pkt[UDP].ar.rdata[0]
     message = encryption_handler.decrypt(encrypted_message)
     print(f"Received: {message.decode('utf-8')}")
     # 2. Put the data in the queue.
