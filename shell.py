@@ -8,6 +8,8 @@ HELP = "help"
 CLEAR = "clear"
 EXIT = "exit"
 LIST = "list"
+CIPHER = "cipher"
+RESET = "reset"
 
 def clear_screen():
     system("clear")
@@ -19,7 +21,8 @@ def print_menu():
 
 def print_help():
     print("Possible Commands:")
-    print("help " + 5*"\t" + " Displays this help screen.")
-    print("clear " + 5*"\t" + " Clears the terminal screen.")
-    print("exit " + 5*"\t" + " End the terminal session.")
+    print("help " + 4*"\t" + " Displays this help screen.")
+    print("clear " + 4*"\t" + " Clears the terminal screen.")
+    print("exit " + 4*"\t" + " End the terminal session.")
+    print("list filepath" + 3*"\t" + " Attempts to list the contents of the given directory (filepath).")
 
