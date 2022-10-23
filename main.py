@@ -18,7 +18,7 @@ args = parser.parse_args()
 
 CONTROLLER_IP = args.controller_ip
 BACKDOOR_IP = args.backdoor_ip
-NETWORK_INTERFACE = arg.interface
+NETWORK_INTERFACE = args.interface
 
 queue = SimpleQueue()
 

