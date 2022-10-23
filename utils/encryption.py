@@ -3,8 +3,11 @@
     which contains all the functions necessary to perform stream encryption 
     using shared secrets. It utilizes the ChaCha20 Stream Cipher.
 """
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
-from os import urandom
+from os import urandom, system
+from cryptography.hazmat.primitives.ciphers import Cipher 
+from cryptography.hazmat.primitives.ciphers.algorithms import ChaCha20
+# Scuffed solution to ignore annoying warning.
+system("clear")
 from secrets import token_bytes
 
 

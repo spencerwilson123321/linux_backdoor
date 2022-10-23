@@ -17,9 +17,10 @@ queue = SimpleQueue()
 
 # Initialize the encryption context.
 encryption_handler = StreamEncryption()
-encryption_handler.read_nonce("nonce.bin")
-encryption_handler.read_secret("secret.key")
+encryption_handler.read_nonce("data/nonce.bin")
+encryption_handler.read_secret("data/secret.key")
 encryption_handler.initialize_encryption_context()
+print()
 
 def subprocess_packet_handler(pkt):
     if pkt[UDP].sport != 53 or pkt[UDP].dport != 53:
