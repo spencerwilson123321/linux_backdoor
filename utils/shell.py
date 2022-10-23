@@ -25,4 +25,5 @@ def print_help():
     print("clear " + 4*"\t" + " Clears the terminal screen.")
     print("exit " + 4*"\t" + " End the terminal session.")
     print("list filepath" + 3*"\t" + " Attempts to list the contents of the given directory (filepath).")
+    print("cipher reset" + 3*"\t" + " Resets the backdoors cipher, this is necessary after each consecutive invocation.")
 

