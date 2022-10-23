@@ -66,7 +66,7 @@ class StreamEncryption:
             prior to calling this function, otherwise it will do nothing.
         """
         if self.__nonce != None and self.__secret != None:
-            self.__algorithm = algorithms.ChaCha20(self.__secret, self.__nonce)
+            self.__algorithm = ChaCha20(self.__secret, self.__nonce)
             self.__cipher = Cipher(self.__algorithm, mode=None)
             self.__encryptor = self.__cipher.encryptor()
             self.__decryptor = self.__cipher.decryptor()
