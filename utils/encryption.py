@@ -1,17 +1,17 @@
 """
     This is the encryption module which contains the StreamEncryption class
-    which contains all the functions necessary to perform stream encryption 
+    which contains all the functions necessary to perform stream encryption
     using shared secrets. It utilizes the ChaCha20 Stream Cipher.
 """
 from os import urandom, system
-from cryptography.hazmat.primitives.ciphers import Cipher 
+from cryptography.hazmat.primitives.ciphers import Cipher
 from cryptography.hazmat.primitives.ciphers.algorithms import ChaCha20
 from secrets import token_bytes
 
 
 class StreamEncryption:
     """
-        The Stream Encryption class is a simple to use all in one 
+        The Stream Encryption class is a simple to use all in one
         stream encryption class. It uses the ChaCha20 stream cipher
         and provides functions to easily perform encryption and decryption.
     """
@@ -29,8 +29,8 @@ class StreamEncryption:
         """
         with open("nonce.bin", "wb") as f:
             f.write(urandom(16))
-    
-    def read_nonce(self, file_path):
+
+    def read_nonce(self, file_path) -> bool:
         """
             Reads a nonce from a file.
         """
@@ -56,7 +56,7 @@ class StreamEncryption:
             return True
         except FileNotFoundError:
             return False
-    
+
     def initialize_encryption_context(self) -> bool:
         """
             Initializes instance variables that are necessary to perform
@@ -73,14 +73,14 @@ class StreamEncryption:
 
     def encrypt(self, cleartext: bytes):
         """
-            Encrypts the given cleartext using the ChaCha20 stream cipher and 
+            Encrypts the given cleartext using the ChaCha20 stream cipher and
             established secret key.
         """
         return self.__encryptor.update(cleartext)
 
     def decrypt(self, ciphertext: bytes):
         """
-            Decrypts the given ciphertext using the ChaCha20 stream cipher and 
+            Decrypts the given ciphertext using the ChaCha20 stream cipher and
             established secret key.
         """
         return self.__decryptor.update(ciphertext)

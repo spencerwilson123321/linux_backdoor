@@ -26,4 +26,3 @@ def validate_nic_interface(interface: str) -> bool:
     if interface in addresses.keys():
         return True
     return False
-

