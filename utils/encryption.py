@@ -6,8 +6,6 @@
 from os import urandom, system
 from cryptography.hazmat.primitives.ciphers import Cipher 
 from cryptography.hazmat.primitives.ciphers.algorithms import ChaCha20
-# Scuffed solution to ignore annoying warning.
-system("clear")
 from secrets import token_bytes
 
 

