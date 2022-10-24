@@ -1,5 +1,7 @@
 """
-    This is the backdoor program.
+    This is the backdoor program. It receives commands from the controller,
+    decrypts them, executes them, and then returns a response via a DNS
+    query.
 """
 
 # Standard Modules
