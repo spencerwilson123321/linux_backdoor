@@ -4,6 +4,10 @@
     query.
 """
 
+# Ignore warnings
+from warnings import filterwarnings
+filterwarnings("ignore")
+
 # Standard Modules
 import os
 from random import randint

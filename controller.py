@@ -4,6 +4,9 @@
     by sending it different commands over a network.
 """
 
+# Ignore warnings
+from warnings import filterwarnings
+filterwarnings("ignore")
 
 # Standard Library Modules
 import argparse
